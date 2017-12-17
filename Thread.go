@@ -15,13 +15,11 @@ static void createThread(pthread_t* pid) {
 
 static void sig_func(int sig)
 {
-	//printf("handling exit signal\n");
-	signal(SIGSEGV,sig_func);
 	pthread_exit(NULL);
 }
 
 static void register_sig_handler() {
-	signal(SIGSEGV,sig_func);
+	signal(SIGABRT, sig_func);
 }
 */
 import "C"
@@ -44,11 +42,6 @@ func createThreadCallback() {
 	(<-create_callback)()
 }
 
-// calls C's sleep function
-func Sleep(seconds uint) {
-	C.sleep(C.uint(seconds))
-}
-
 // initializes a thread using pthread_create
 func Create(cb ThreadCallback) Thread {
 	var pid C.pthread_t
@@ -60,17 +53,10 @@ func Create(cb ThreadCallback) Thread {
 	return Thread(uintptr(unsafe.Pointer(&pid)))
 }
 
-// determines if the thread is running
-func (t Thread) Running() bool {
-	// magic number "3". oops
-	// couldn't figure out the proper way to do this. probably because i suck
-	// if someone knows the right way, pls submit a pull request
-	return int(C.pthread_kill(t.c(), 0)) != 3
-}
-
 // signals the thread in question to terminate
 func (t Thread) Kill() {
-	C.pthread_kill(t.c(), C.SIGSEGV)
+	C.pthread_detach(t.c());
+	C.pthread_kill(t.c(), C.SIGABRT)
 }
 
 // helper function to convert the Thread object into a C.pthread_t object
